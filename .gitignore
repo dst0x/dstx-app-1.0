@@ -1,0 +1,15 @@
+# Build output
+Debug/
+Release/
+
+# IDE metadata (keep .project and .cproject)
+.settings/
+*.launch
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.tgz
