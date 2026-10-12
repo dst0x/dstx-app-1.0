@@ -8,6 +8,7 @@
 #include "bsp_sdcard.h"
 #include "ff.h"
 #include "diskio.h"
+#include <string.h>
 
 #define DEV_SD         (0U)
 #define SD_TIMEOUT_MS  (1000U)
@@ -92,6 +93,54 @@ HAL_StatusTypeDef bsp_sd_append_file(const char *path, const void *data, uint32_
     fr = FR_DISK_ERR;
   }
   return ((fr == FR_OK) && (bw == (UINT)len)) ? HAL_OK : HAL_ERROR;
+}
+
+HAL_StatusTypeDef bsp_sd_delete_file(const char *path)
+{
+  if (s_mounted == 0U)
+  {
+    return HAL_ERROR;
+  }
+  FRESULT fr = f_unlink(path);
+  return ((fr == FR_OK) || (fr == FR_NO_FILE)) ? HAL_OK : HAL_ERROR;
+}
+
+HAL_StatusTypeDef bsp_sd_open_read(const char *path)
+{
+  if (s_mounted == 0U)
+  {
+    return HAL_ERROR;
+  }
+  return (f_open(&s_file, path, FA_READ) == FR_OK) ? HAL_OK : HAL_ERROR;
+}
+
+uint8_t bsp_sd_read_line(char *buf, uint16_t size)
+{
+  uint16_t pos = 0U;
+  UINT     br  = 0U;
+
+  while (pos < (size - 1U))
+  {
+    if (f_read(&s_file, &buf[pos], 1U, &br) != FR_OK || br == 0U)
+    {
+      break;
+    }
+    if (buf[pos] == '\n')
+    {
+      break;
+    }
+    if (buf[pos] != '\r')
+    {
+      pos++;
+    }
+  }
+  buf[pos] = '\0';
+  return (pos > 0U) ? 1U : 0U;
+}
+
+void bsp_sd_close(void)
+{
+  (void)f_close(&s_file);
 }
 
 /* FatFs disk I/O layer -----------------------------------------------------*/

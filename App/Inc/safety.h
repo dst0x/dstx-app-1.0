@@ -18,19 +18,11 @@
 #define SAFETY_FAULT_ESTOP       (0x04U)  /**< Emergency stop pressed */
 #define SAFETY_FAULT_IWDG_RESET  (0x08U)  /**< Last reset was caused by the watchdog */
 
-/** @brief Enables the PVD and captures the reset cause. */
 void safety_init(void);
-
-/** @brief Refreshes the watchdog and samples the emergency stop. Call every loop. */
 void safety_service(void);
-
-/** @brief Bitmask of SAFETY_FAULT_* flags currently set. */
-uint8_t safety_get_faults(void);
-
-/** @retval 1 if a fault requires the outputs to be switched off */
-uint8_t safety_is_tripped(void);
-
-/** @brief Clears latched faults whose cause has gone (PVD, ESTOP). */
 void safety_clear_faults(void);
+
+uint8_t safety_get_faults(void);
+uint8_t safety_is_tripped(void);
 
 #endif /* SAFETY_H */

@@ -60,8 +60,10 @@ extern DMA_HandleTypeDef hdma_sdio_tx;
 extern SD_HandleTypeDef hsd;
 extern DMA_HandleTypeDef hdma_usart1_rx;
 extern DMA_HandleTypeDef hdma_usart1_tx;
+extern DMA_HandleTypeDef hdma_usart6_rx;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
+extern UART_HandleTypeDef huart6;
 extern TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN EV */
@@ -79,7 +81,6 @@ void NMI_Handler(void)
   /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
 
   /* USER CODE END NonMaskableInt_IRQn 0 */
-  HAL_RCC_NMI_IRQHandler();
   /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
    while (1)
   {
@@ -93,7 +94,13 @@ void NMI_Handler(void)
 void HardFault_Handler(void)
 {
   /* USER CODE BEGIN HardFault_IRQn 0 */
-
+  {
+    const char msg[] = "\r\n!!! HARDFAULT !!!\r\n";
+    for (uint32_t i = 0; msg[i] != '\0'; i++) {
+      while (!(USART2->SR & USART_SR_TXE)) {}
+      USART2->DR = (uint16_t)msg[i];
+    }
+  }
   /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
@@ -108,7 +115,13 @@ void HardFault_Handler(void)
 void MemManage_Handler(void)
 {
   /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
+  {
+    const char msg[] = "\r\n!!! MEMMANAGE !!!\r\n";
+    for (uint32_t i = 0; msg[i] != '\0'; i++) {
+      while (!(USART2->SR & USART_SR_TXE)) {}
+      USART2->DR = (uint16_t)msg[i];
+    }
+  }
   /* USER CODE END MemoryManagement_IRQn 0 */
   while (1)
   {
@@ -123,7 +136,13 @@ void MemManage_Handler(void)
 void BusFault_Handler(void)
 {
   /* USER CODE BEGIN BusFault_IRQn 0 */
-
+  {
+    const char msg[] = "\r\n!!! BUSFAULT !!!\r\n";
+    for (uint32_t i = 0; msg[i] != '\0'; i++) {
+      while (!(USART2->SR & USART_SR_TXE)) {}
+      USART2->DR = (uint16_t)msg[i];
+    }
+  }
   /* USER CODE END BusFault_IRQn 0 */
   while (1)
   {
@@ -251,6 +270,20 @@ void TIM6_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles DMA2 stream1 global interrupt.
+  */
+void DMA2_Stream1_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Stream1_IRQn 0 */
+
+  /* USER CODE END DMA2_Stream1_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart6_rx);
+  /* USER CODE BEGIN DMA2_Stream1_IRQn 1 */
+
+  /* USER CODE END DMA2_Stream1_IRQn 1 */
+}
+
+/**
   * @brief This function handles DMA2 stream2 global interrupt.
   */
 void DMA2_Stream2_IRQHandler(void)
@@ -304,6 +337,20 @@ void DMA2_Stream7_IRQHandler(void)
   /* USER CODE BEGIN DMA2_Stream7_IRQn 1 */
 
   /* USER CODE END DMA2_Stream7_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART6 global interrupt.
+  */
+void USART6_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART6_IRQn 0 */
+
+  /* USER CODE END USART6_IRQn 0 */
+  HAL_UART_IRQHandler(&huart6);
+  /* USER CODE BEGIN USART6_IRQn 1 */
+
+  /* USER CODE END USART6_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

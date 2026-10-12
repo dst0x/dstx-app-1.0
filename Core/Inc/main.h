@@ -61,6 +61,10 @@ void Error_Handler(void);
 #define DEBUG_TX_GPIO_Port GPIOA
 #define DEBUG_RX_Pin GPIO_PIN_3
 #define DEBUG_RX_GPIO_Port GPIOA
+#define ESP32_TX_Pin GPIO_PIN_6
+#define ESP32_TX_GPIO_Port GPIOC
+#define ESP32_RX_Pin GPIO_PIN_7
+#define ESP32_RX_GPIO_Port GPIOC
 #define RS485_TX_Pin GPIO_PIN_9
 #define RS485_TX_GPIO_Port GPIOA
 #define RS485_RX_Pin GPIO_PIN_10

@@ -10,26 +10,27 @@
 #include "cJSON.h"
 #include <string.h>
 
-/* Sensor table -------------------------------------------------------------*/
-/* TODO: fill in from Docs/modbus_register_map.md and set enabled = 1U. */
 const sensor_def_t g_sensor_defs[] = {
-    /* name          en   slave fc  reg      scale  offset */
     { "example_temp", 0U, 1U,   3U, 0x0000U, 0.1f,  0.0f },
 };
 const uint8_t g_sensor_count = (uint8_t)(sizeof(g_sensor_defs) / sizeof(g_sensor_defs[0]));
 
-/* Runtime configuration ----------------------------------------------------*/
 config_t g_config = {
-    .device_id      = "UNKNOWN",
-    .dev_interval   = 3600U,
-    .server_address = "localhost",
-    .server_port    = 80U,
+    .devid          = "UNKNOWN",
+    .dev_inv        = 300U,
+    .server         = "localhost",
+    .server_port    = 1883U,
     .bt_name        = "DEVICE",
     .bt_key         = "000000",
-    .internet_mode  = 0U,
+    .protocol_mode  = "mqtt",
+    .inet_mode      = 0U,
     .gsm_apn        = "",
     .wifi_ssid      = "",
-    .wifi_pass      = ""
+    .wifi_pass      = "",
+    .mqtt_topic     = "dstxlabs/signal",
+    .mqtt_user      = "",
+    .mqtt_pass      = "",
+    .ntp_timezone   = 7
 };
 
 #define CJSON_HEAP_SIZE (4096U)
@@ -54,16 +55,16 @@ static void cjson_free(void *ptr)
     (void)ptr;
 }
 
-static void get_string(const cJSON *root, const char *key, char *dest)
+static uint8_t get_string(const cJSON *root, const char *key, char *dest)
 {
     const cJSON *item = cJSON_GetObjectItem(root, key);
 
     if (cJSON_IsString(item) && (item->valuestring != NULL)) {
         strncpy(dest, item->valuestring, CONFIG_STR_MAX - 1U);
         dest[CONFIG_STR_MAX - 1U] = '\0';
-    } else {
-        bsp_uart_debug_printf("[WARN] config: %s invalid\r\n", key);
+        return 1U;
     }
+    return 0U;
 }
 
 static uint8_t get_number(const cJSON *root, const char *key, double *value)
@@ -74,7 +75,6 @@ static uint8_t get_number(const cJSON *root, const char *key, double *value)
         *value = item->valuedouble;
         return 1U;
     }
-    bsp_uart_debug_printf("[WARN] config: %s invalid\r\n", key);
     return 0U;
 }
 
@@ -106,22 +106,45 @@ uint8_t config_load(void)
         return 0U;
     }
 
-    get_string(root, "device_id", g_config.device_id);
-    if (get_number(root, "dev_interval", &num) != 0U) {
-        g_config.dev_interval = (uint32_t)num;
+    /* required fields — warn if missing */
+    if (get_string(root, "devid", g_config.devid) == 0U) {
+        bsp_uart_debug_print("[WARN] config: devid missing\r\n");
     }
-    get_string(root, "server_address", g_config.server_address);
+    (void)get_number(root, "dev_inv", &num);
+    if (num > 0.0) { g_config.dev_inv = (uint32_t)num; }
+    if (get_string(root, "server", g_config.server) == 0U) {
+        bsp_uart_debug_print("[WARN] config: server missing\r\n");
+    }
     if (get_number(root, "server_port", &num) != 0U) {
         g_config.server_port = (uint16_t)num;
     }
-    get_string(root, "bt_name", g_config.bt_name);
-    get_string(root, "bt_key", g_config.bt_key);
-    if (get_number(root, "internet_mode", &num) != 0U) {
-        g_config.internet_mode = (uint8_t)num;
+    if (get_number(root, "inet_mode", &num) != 0U) {
+        g_config.inet_mode = (uint8_t)num;
     }
-    get_string(root, "gsm_apn", g_config.gsm_apn);
-    get_string(root, "wifi_ssid", g_config.wifi_ssid);
-    get_string(root, "wifi_pass", g_config.wifi_pass);
+    if (get_string(root, "wifi_ssid", g_config.wifi_ssid) == 0U) {
+        bsp_uart_debug_print("[WARN] config: wifi_ssid missing\r\n");
+    }
+    if (get_string(root, "wifi_pass", g_config.wifi_pass) == 0U) {
+        bsp_uart_debug_print("[WARN] config: wifi_pass missing\r\n");
+    }
+    if (get_string(root, "mqtt_topic", g_config.mqtt_topic) == 0U) {
+        bsp_uart_debug_print("[WARN] config: mqtt_topic missing\r\n");
+    }
+    if (get_string(root, "mqtt_user", g_config.mqtt_user) == 0U) {
+        bsp_uart_debug_print("[WARN] config: mqtt_user missing\r\n");
+    }
+    if (get_string(root, "mqtt_pass", g_config.mqtt_pass) == 0U) {
+        bsp_uart_debug_print("[WARN] config: mqtt_pass missing\r\n");
+    }
+    if (get_number(root, "ntp_timezone", &num) != 0U) {
+        g_config.ntp_timezone = (int8_t)num;
+    }
+
+    /* optional fields — silent if missing */
+    (void)get_string(root, "bt_name", g_config.bt_name);
+    (void)get_string(root, "bt_key", g_config.bt_key);
+    (void)get_string(root, "protocol_mode", g_config.protocol_mode);
+    (void)get_string(root, "gsm_apn", g_config.gsm_apn);
 
     /* Release everything held by the bump allocator */
     s_cjson_heap_idx = 0U;
@@ -130,14 +153,18 @@ uint8_t config_load(void)
 
 void config_print(void)
 {
-    bsp_uart_debug_printf("[INFO] Device ID      : %s\r\n", g_config.device_id);
-    bsp_uart_debug_printf("[INFO] Interval       : %lu s\r\n", (unsigned long)g_config.dev_interval);
-    bsp_uart_debug_printf("[INFO] Server         : %s:%u\r\n", g_config.server_address, (unsigned)g_config.server_port);
-    bsp_uart_debug_printf("[INFO] Bluetooth name : %s\r\n", g_config.bt_name);
-    bsp_uart_debug_printf("[INFO] Internet mode  : %s\r\n", (g_config.internet_mode == 0U) ? "GSM" : "WiFi");
-    if (g_config.internet_mode == 0U) {
+    bsp_uart_debug_printf("[INFO] Device ID      : %s\r\n", g_config.devid);
+    bsp_uart_debug_printf("[INFO] Interval       : %lu s\r\n", (unsigned long)g_config.dev_inv);
+    bsp_uart_debug_printf("[INFO] Server         : %s:%u\r\n", g_config.server, (unsigned)g_config.server_port);
+    bsp_uart_debug_printf("[INFO] Protocol       : %s\r\n", g_config.protocol_mode);
+    bsp_uart_debug_printf("[INFO] Bluetooth      : %s\r\n", g_config.bt_name);
+    bsp_uart_debug_printf("[INFO] Internet mode  : %s\r\n", (g_config.inet_mode == 0U) ? "GSM" : "WiFi");
+    if (g_config.inet_mode == 0U) {
         bsp_uart_debug_printf("[INFO] APN            : %s\r\n", g_config.gsm_apn);
     } else {
         bsp_uart_debug_printf("[INFO] WiFi SSID      : %s\r\n", g_config.wifi_ssid);
     }
+    bsp_uart_debug_printf("[INFO] MQTT topic     : %s\r\n", g_config.mqtt_topic);
+    bsp_uart_debug_printf("[INFO] MQTT user      : %s\r\n", g_config.mqtt_user);
+    bsp_uart_debug_printf("[INFO] NTP timezone   : %+d\r\n", (int)g_config.ntp_timezone);
 }

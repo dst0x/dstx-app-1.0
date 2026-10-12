@@ -34,13 +34,8 @@ typedef enum {
 modbus_status_t modbus_read_registers(uint8_t slave, uint8_t function, uint16_t start_addr,
                                      uint16_t quantity, uint16_t *dest);
 
-/** @brief Last exception code returned by a slave (valid after MODBUS_ERR_EXCEPTION). */
 uint8_t modbus_get_last_exception(void);
-
-/** @brief Short text for a status code, for logging. */
 const char *modbus_status_string(modbus_status_t status);
-
-/** @brief Modbus CRC-16 (polynomial 0xA001, initial value 0xFFFF). */
 uint16_t modbus_crc16(const uint8_t *data, uint16_t len);
 
 #endif /* MODBUS_MASTER_H */

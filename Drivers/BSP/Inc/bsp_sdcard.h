@@ -33,4 +33,16 @@ HAL_StatusTypeDef bsp_sd_read_file(const char *path, char *buf, uint32_t buf_siz
 /** @brief Appends len bytes to a file, creating it if needed. */
 HAL_StatusTypeDef bsp_sd_append_file(const char *path, const void *data, uint32_t len);
 
+/** @brief Deletes a file. Returns HAL_OK even if the file did not exist. */
+HAL_StatusTypeDef bsp_sd_delete_file(const char *path);
+
+/** @brief Opens a file for sequential line-by-line reading. */
+HAL_StatusTypeDef bsp_sd_open_read(const char *path);
+
+/** @brief Reads one line (up to size-1 chars). Returns 1 if a line was read, 0 at EOF/error. */
+uint8_t bsp_sd_read_line(char *buf, uint16_t size);
+
+/** @brief Closes a file opened with bsp_sd_open_read. */
+void bsp_sd_close(void);
+
 #endif /* BSP_SDCARD_H */

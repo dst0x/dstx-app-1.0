@@ -4,6 +4,7 @@
  */
 
 #include "bsp_uart.h"
+#include "bsp_iwdg.h"
 #include "tx_api.h"
 #include <stdarg.h>
 #include <stdio.h>
@@ -48,6 +49,7 @@ void bsp_uart_debug_print(const char *str)
 {
   size_t len = strlen(str);
 
+  bsp_iwdg_refresh();
   tx_mutex_get(&s_debug_lock, TX_WAIT_FOREVER);
   while (len > 0U)
   {
@@ -71,6 +73,7 @@ void bsp_uart_debug_printf(const char *fmt, ...)
   va_list args;
   size_t len;
 
+  bsp_iwdg_refresh();
   tx_mutex_get(&s_debug_lock, TX_WAIT_FOREVER);
   va_start(args, fmt);
   (void)vsnprintf(buf, sizeof(buf), fmt, args);

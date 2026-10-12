@@ -18,6 +18,14 @@
 | TX     | PA9  | AF7 |
 | RX     | PA10 | AF7 |
 
+## USART6 — ESP32 AT (115200 baud)
+| Signal | Pin | AF  | Notes           |
+|--------|-----|-----|-----------------|
+| TX     | PC6 | AF8 | STM32 → ESP32   |
+| RX     | PC7 | AF8 | ESP32 → STM32   |
+
+DMA: USART6_RX on DMA2_Stream1 (circular mode)
+
 ## SDIO — Micro SD (4-bit)
 | Signal | Pin  | Pull-up |
 |--------|------|---------|
